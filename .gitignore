@@ -1,0 +1,10 @@
+.vscode/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+_deps/
+cmake_install.cmake
+graphs
+main
+window
+
