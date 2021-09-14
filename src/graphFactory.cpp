@@ -177,20 +177,66 @@ Graph stars() {
     return adjacency ;
 }
 
-Graph huge() {
+Graph tree() {
 
-    srand( 100 ) ; //time( nullptr ) ) ;
 
-    constexpr int N = 32 ;
+    constexpr int Depth = 4 ;
+    constexpr int N = (1 << Depth) - 1 ;
 
     Graph adjacency ;
     for( int i=0 ; i<N ; i++ ) {
         adjacency.emplace_back( ) ;
     }
-    for( auto i=0 ; i<50 ; i++ ) {
-        int a = i % N ;
-        int b = rand() % N ;        
-        adjacency[a].push_back(b) ;
+
+    for( int i=1 ; i<Depth ; i++ ) {
+        int width = 1<<i ;
+        int firstLeaf = width - 1 ;
+        for( int i=0 ; i<width ; i++ ) {
+            int child = firstLeaf+ i ;
+            int parent = (child-1) >> 1 ;
+            adjacency[parent].push_back( child ) ;
+        }
     }
+
+    return adjacency ;
+}
+
+
+Graph ring() {
+
+    constexpr int N = 10 ;
+
+    Graph adjacency ;
+    for( int i=0 ; i<N ; i++ ) {
+        adjacency.emplace_back( ) ;
+    }
+    for( auto i=0 ; i<(N-1) ; i++ ) {
+        adjacency[i].push_back(i+1) ;
+    }
+    adjacency[N-1].push_back(0) ;
+
+    return adjacency ;
+}
+
+Graph bipartite() {
+
+    constexpr int N = 10 ;
+
+    Graph adjacency ;
+    for( int i=0 ; i<N ; i++ ) {
+        adjacency.emplace_back( ) ;
+    }
+    for( auto i=0 ; i<N ; i+=2 ) {
+        if( i>1 ) {
+            adjacency[i].push_back(i-1) ;
+        }
+        adjacency[i].push_back(i+1) ;
+        adjacency[i+1].push_back(i) ;
+        if( (i+3)<N ) {
+            adjacency[i].push_back(i+3) ;
+            adjacency[i+3].push_back(i+2) ;
+        }
+    }
+
     return adjacency ;
 }

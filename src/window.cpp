@@ -59,7 +59,7 @@ float dt = 1 ;
 int num_edges ;
 std::vector<std::pair<double,double>> pointsNew ;
 std::vector<std::pair<double,double>> pointsOld ;
-constexpr float MaxClock = 60.f ;
+constexpr float MaxClock = 100.f ;
 Graph adjacency ;
 
 // ----------------------------------------------------------
@@ -86,11 +86,8 @@ void display(){
         }
       }
     } 
-    // pointsOld.clear() ;
-    // pointsOld = std::move( pointsNew ) ;
     pointsOld = pointsNew ;
     pointsNew = getCoords( adjacency, a, b ) ;
-    // std::cout << graph << " " << a << "," << b << std::endl ;
     t = 0 ;
   }
 
@@ -111,7 +108,7 @@ void display(){
 
   // L R T B
   glOrtho( -IMG_LIMIT,  IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  1,  -1) ;
-  float rate = (4.f * t) / MaxClock ;
+  float rate = (3.f * t) / MaxClock ;
   if( rate > 1.f ) rate = 1.f ;
 
   std::vector<std::pair<double,double>> points ;
