@@ -58,7 +58,7 @@ float dt = 1 ;
 int num_edges ;
 std::vector<std::pair<double,double>> pointsNew ;
 std::vector<std::pair<double,double>> pointsOld ;
-constexpr float MaxClock = 100.f ;
+constexpr float MaxClock = 50.f ;
 Graph * theGraph = GraphFactory::get( 0 ) ;
 
 // ----------------------------------------------------------
@@ -69,12 +69,12 @@ void display(){
 
   if( t > MaxClock ) {
     b++ ;
-    if( (b+1) >= theGraph->numNodes() ) { 
+    if( (b) >= theGraph->numNodes() ) { 
       a++ ; 
       b = a+1 ;
-      if( (a+2) >= theGraph->numNodes() ) {
-        a = 0 ;
-        b = 1 ;
+      if( (a+1) >= theGraph->numNodes() ) {
+        a = 1 ;
+        b = 2 ;
         graph++ ;
         delete theGraph ;
         if( graph>=GraphFactory::NumGraphs ) graph = 0 ;

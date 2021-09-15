@@ -1,7 +1,13 @@
 
 #include "graph.hpp"
+#include <iostream>
 
-
+void eigs( 
+        double * h_S,   // output eigenvalues
+        double * h_V,   // output eigen vectors
+        double * h_A,   // input matrix ( symmetric = upper )
+        const int64_t m // m x m matrix
+    ) ;
 
 void gemm( 
         double * h_A,
@@ -55,8 +61,12 @@ void Graph::calculate() {
     int k = numNodes() ;
 
     double *U = &singularVectors[0] ;
-    double V[ k*n ] ;
-    svd( U, &singularValues[0], V, &lap[0], m, n, m, k ) ;
+    // double V[ k*n ] ;
+    // svd( U, &singularValues[0], V, &lap[0], m, n, m, k ) ;
+
+    // double S[m] ;
+    eigs( &singularValues[0], U, &lap[0], m ) ;
+
 }
 
 
