@@ -31,29 +31,29 @@ void svd(
     cusolverStatus_t status ;    
     cudaError_t cudaStat ;
 
-    cusolverDnHandle_t handle = NULL;
-    cusolverDnParams_t params_gesvdr = NULL;
+    cusolverDnHandle_t handle = nullptr;
+    cusolverDnParams_t params_gesvdr = nullptr;
 
     const int64_t ldu = m;
     const int64_t ldv = n;
  
 	const int64_t min_mn = std::min(m,n); 
 
-    void *d_A    = NULL;
-    void *d_U    = NULL;
-    void *d_S    = NULL;
-    void *d_V    = NULL; 
-	int  *d_info = NULL;
+    void *d_A    = nullptr ;
+    void *d_U    = nullptr;
+    void *d_S    = nullptr;
+    void *d_V    = nullptr; 
+	int  *d_info = nullptr;
     int   h_info = 0;
 
-    double *d_work_gesvdr = NULL;
-    double *h_work_gesvdr = NULL;
+    double *d_work_gesvdr = nullptr;
+    double *h_work_gesvdr = nullptr;
     size_t workspaceInBytesOnDevice_gesvdr = 0;
     size_t workspaceInBytesOnHost_gesvdr = 0;
 
 	/* Compute left/right eigenvectors */
-    signed char jobu = 'S';
-    signed char jobv = 'S';
+    signed char jobu = h_U==nullptr ? 'N' : 'S' ;
+    signed char jobv = h_V==nullptr ? 'N' : 'S' ;
 
 	/* Number of iterations */
     const int64_t iters = 10 ;
@@ -69,10 +69,15 @@ void svd(
 
     cudaStat = cudaMalloc((void **) &d_A, sizeof(double)*lda*n);
     assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMalloc((void **) &d_U, sizeof(double)*ldu*k);
-    assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMalloc((void **) &d_V, sizeof(double)*ldv*k);
-    assert( cudaSuccess == cudaStat);
+
+    if( h_U != nullptr ) {
+        cudaStat = cudaMalloc((void **) &d_U, sizeof(double)*ldu*k);
+        assert( cudaSuccess == cudaStat);
+    }
+    if( h_V != nullptr ) {
+        cudaStat = cudaMalloc((void **) &d_V, sizeof(double)*ldv*k);
+        assert( cudaSuccess == cudaStat);
+    }
     cudaStat = cudaMalloc((void **) &d_S, sizeof(double)*n);
     assert( cudaSuccess == cudaStat);
     cudaStat = cudaMalloc((void **) &d_info, sizeof(int));
@@ -157,10 +162,14 @@ void svd(
 	/* copy info from device to host and sync */
     cudaStat = cudaMemcpy(h_S, d_S, k * sizeof(double), cudaMemcpyDeviceToHost);
     assert( cudaSuccess == cudaStat );
-    cudaStat = cudaMemcpy(h_U, d_U, ldu * k * sizeof(double), cudaMemcpyDeviceToHost);
-    assert( cudaSuccess == cudaStat );
-    cudaStat = cudaMemcpy(h_V, d_V, ldv * k * sizeof(double), cudaMemcpyDeviceToHost);
-    assert( cudaSuccess == cudaStat );
+    if( d_U != nullptr ) {
+        cudaStat = cudaMemcpy(h_U, d_U, ldu * k * sizeof(double), cudaMemcpyDeviceToHost);
+        assert( cudaSuccess == cudaStat );
+    }
+    if( d_V != nullptr ) {
+        cudaStat = cudaMemcpy(h_V, d_V, ldv * k * sizeof(double), cudaMemcpyDeviceToHost);
+        assert( cudaSuccess == cudaStat );
+    }
     cudaStat = cudaDeviceSynchronize();
     assert( cudaSuccess == cudaStat );
 

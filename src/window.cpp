@@ -6,7 +6,6 @@
 #include <pthread.h>
 
 #include "graphFactory.hpp"
-#include "functions.hpp"
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glut.h>
@@ -60,7 +59,7 @@ int num_edges ;
 std::vector<std::pair<double,double>> pointsNew ;
 std::vector<std::pair<double,double>> pointsOld ;
 constexpr float MaxClock = 100.f ;
-Graph adjacency ;
+Graph * theGraph = GraphFactory::get( 0 ) ;
 
 // ----------------------------------------------------------
 // display() Callback function
@@ -70,24 +69,22 @@ void display(){
 
   if( t > MaxClock ) {
     b++ ;
-    if( (b+1) >= adjacency.size() ) { 
+    if( (b+1) >= theGraph->numNodes() ) { 
       a++ ; 
       b = a+1 ;
-      if( (a+2) >= adjacency.size() ) {
+      if( (a+2) >= theGraph->numNodes() ) {
         a = 0 ;
         b = 1 ;
         graph++ ;
+        delete theGraph ;
         if( graph>=GraphFactory::NumGraphs ) graph = 0 ;
-        adjacency = GraphFactory::get(graph) ;
+        theGraph = GraphFactory::get(graph) ;
         pointsNew.clear() ;
-        num_edges = 0 ;
-        for( auto &node : adjacency ) {
-          num_edges += node.size() ;
-        }
+        num_edges = theGraph->numEdges() ;
       }
     } 
     pointsOld = pointsNew ;
-    pointsNew = getCoords( adjacency, a, b ) ;
+    pointsNew = theGraph->getCoords( a, b ) ;
     t = 0 ;
   }
 
@@ -100,7 +97,7 @@ void display(){
   glColor3f( .2, 1, .8 );
   glRasterPos2f( -.9, 0.9 );
   char s[64] ;
-  sprintf( s, "Graph: %'d  %'d - %'d  Nodes: %'ld  Edges: %'d", graph, a, b, adjacency.size(), num_edges ) ;
+  sprintf( s, "Graph: %s  %'d - %'d  Nodes: %'ld  Edges: %'d", theGraph->name().c_str(), a, b, theGraph->numNodes(), num_edges ) ;
   int len = (int)strlen(s);
   for( int i = 0; i < len; i++ ) {
     glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
@@ -133,7 +130,7 @@ void display(){
     float x = point.first ;    
     float y = point.second ;    
 
-    for( auto e : adjacency[n] ) {
+    for( auto e : theGraph->edges(n) ) {
       float x2 = points[e].first ;
       float y2 = points[e].second ;
 
