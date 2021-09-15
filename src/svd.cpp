@@ -70,11 +70,11 @@ void svd(
     cudaStat = cudaMalloc((void **) &d_A, sizeof(double)*lda*n);
     assert( cudaSuccess == cudaStat);
 
-    if( h_U != nullptr ) {
+    if( jobu == 'S' ) {
         cudaStat = cudaMalloc((void **) &d_U, sizeof(double)*ldu*k);
         assert( cudaSuccess == cudaStat);
     }
-    if( h_V != nullptr ) {
+    if( jobv == 'S' ) {
         cudaStat = cudaMalloc((void **) &d_V, sizeof(double)*ldv*k);
         assert( cudaSuccess == cudaStat);
     }

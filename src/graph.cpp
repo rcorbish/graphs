@@ -57,7 +57,6 @@ void Graph::calculate() {
     double *U = &singularVectors[0] ;
     double V[ k*n ] ;
     svd( U, &singularValues[0], V, &lap[0], m, n, m, k ) ;
-
 }
 
 
