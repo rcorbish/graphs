@@ -210,13 +210,11 @@ Graph * GraphFactory::bipartite() {
         if( i>1 ) {
             graph->addEdge(i,i-1) ;
         }
-        graph->addEdge(i,i+1) ;
         graph->addEdge(i+1,i) ;
         if( (i+3)<N ) {
             graph->addEdge(i,i+3) ;
-            graph->addEdge(i+3,i+2) ;
         }
     }
-
+    // graph->print( std::cout ) ;
     return graph ;
 }

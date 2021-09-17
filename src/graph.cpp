@@ -1,6 +1,8 @@
 
 #include "graph.hpp"
-#include <iostream>
+
+#include <set>
+
 
 void eigs( 
         double * h_S,   // output eigenvalues
@@ -108,11 +110,11 @@ size_t Graph::numEdges() {
 
 std::string Graph::name() { return this->_name ; } 
 
-std::vector<std::pair<double,double>> Graph::getCoords( int a, int b ) {
+std::vector<Point> Graph::getCoords( int a, int b ) {
 
     double *U = &singularVectors[0] ;
 
-    std::vector<std::pair<double,double>> points ;
+    std::vector<Point> points ;
     double *x = U + a*numNodes() ;
     double *y = U + b*numNodes() ;
 
@@ -121,4 +123,41 @@ std::vector<std::pair<double,double>> Graph::getCoords( int a, int b ) {
     }
 
     return points ;
+}
+
+
+std::vector<LineSegment> Graph::getLines( std::vector<Point> points )  {
+
+    std::vector<LineSegment> lines ;
+    lines.reserve( numEdges() ) ;
+
+    std::set<std::pair<int,int>> existingLines ;
+
+    int n = 0 ;
+    for( auto point : points ) {
+        for( auto e : edges(n) ) {
+            int a,b ;
+            if( n>=e ) { a=n ; b=e ; } else { a=e ; b=n ; }
+            std::pair<int,int> thisLine( a , b ) ;
+            if( existingLines.find(thisLine) == existingLines.end() ) {
+                lines.emplace_back( point, points[e] ) ;
+                existingLines.emplace( a,b ) ;
+            }
+        }
+        n++ ;
+    }
+    return lines ;
+}
+
+
+void Graph::print( std::ostream &os ) {
+    int n = 0 ; 
+    for( auto node : adjacencyMatrix ) {
+        os << n << " " ;
+        n++ ;
+        for( auto tgt : node ) {
+            os << tgt << " " ;
+        }
+        os << std::endl ;
+    }
 }

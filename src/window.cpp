@@ -58,7 +58,7 @@ float dt = 1 ;
 int num_edges ;
 std::vector<std::pair<double,double>> pointsNew ;
 std::vector<std::pair<double,double>> pointsOld ;
-constexpr float MaxClock = 50.f ;
+constexpr float MaxClock = 150.f ;
 Graph * theGraph = GraphFactory::get( 0 ) ;
 
 // ----------------------------------------------------------
@@ -86,6 +86,18 @@ void display(){
     pointsOld = pointsNew ;
     pointsNew = theGraph->getCoords( a, b ) ;
     t = 0 ;
+
+    std::vector<LineSegment> lines = theGraph->getLines( pointsNew ) ;
+
+    int numCrossings = 0 ;
+    for( size_t i=0 ; i<lines.size() ; i++ ) {
+      LineSegment a = lines[i] ;
+      for( size_t j=(i+1) ; j<lines.size() ; j++ ) {
+        LineSegment b = lines[j] ;
+        numCrossings += a.crosses(b) ? 1 : 0 ;
+      }
+    }
+    std::cout << "Num crossings " << numCrossings << std::endl ;
   }
 
   //  Clear screen and Z-buffer
@@ -95,20 +107,11 @@ void display(){
   glLoadIdentity(); 
 
   glColor3f( .2, 1, .8 );
-  glRasterPos2f( -.9, 0.9 );
-  char s[64] ;
-  sprintf( s, "Graph: %s  %'d - %'d  Nodes: %'ld  Edges: %'d", theGraph->name().c_str(), a, b, theGraph->numNodes(), num_edges ) ;
-  int len = (int)strlen(s);
-  for( int i = 0; i < len; i++ ) {
-    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
-  }
 
-  // L R T B
-  glOrtho( -IMG_LIMIT,  IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  1,  -1) ;
   float rate = (3.f * t) / MaxClock ;
   if( rate > 1.f ) rate = 1.f ;
 
-  std::vector<std::pair<double,double>> points ;
+  std::vector<Point> points ;
   int n = 0 ;
   for( int n=0 ; n<pointsNew.size() ; n++ ) {
     float xnew = pointsNew[n].first ;
@@ -120,27 +123,29 @@ void display(){
     float y = ( yold + ( rate * ( ynew - yold ) ) ) * IMG_LIMIT ;
     points.emplace_back(x,y) ;
   }
+  std::vector<LineSegment> lines = theGraph->getLines( points ) ;
+
+  glRasterPos2f( -.9, 0.9 );
+  char s[64] ;
+  sprintf( s, "Graph: %s  %'d - %'d  Nodes: %'ld  Edges: %'d/%'ld", theGraph->name().c_str(), a, b, theGraph->numNodes(), num_edges, lines.size() ) ;
+  int len = (int)strlen(s);
+  for( int i = 0; i < len; i++ ) {
+    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
+  }
 
   glm::vec3 rgbl = hsv_to_rgb( (graph/(float)GraphFactory::NumGraphs), 1, 1 ) ;
   glColor3f( rgbl.r, rgbl.g, rgbl.b );
 
-  n=0 ;
-  for( auto point : points ) {
+  // L R T B
+  glOrtho( -IMG_LIMIT,  IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  1,  -1) ;
 
-    float x = point.first ;    
-    float y = point.second ;    
-
-    for( auto e : theGraph->edges(n) ) {
-      float x2 = points[e].first ;
-      float y2 = points[e].second ;
-
-      glBegin(GL_LINES);
-        glVertex2f( x, y ) ;
-        glVertex2f( x2, y2 ) ;
-      glEnd();
-    }
-    n++ ;
+  for( auto line : lines ) {
+      glBegin(GL_LINES) ;
+        glVertex2f( line.a.first, line.a.second ) ;
+        glVertex2f( line.b.first, line.b.second ) ;
+      glEnd() ;
   }
+
 
   float hue = 0.f ;
   float dhue = 1.f / points.size() ;
