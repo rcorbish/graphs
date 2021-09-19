@@ -1,10 +1,18 @@
+#pragma once 
 
 #include <vector>
 #include <string>
 #include <iostream>
+#include <cmath>
 
 typedef std::vector<std::vector<int>> AdjacencyMatrix ;
 typedef std::pair<double,double> Point ;
+
+static float distance( Point a, Point b ) {
+    float dx = a.first - b.first ;
+    float dy = a.second - b.second ;
+    return sqrt( dx*dx + dy*dy )  ;
+}
 
 class LineSegment {
     public :

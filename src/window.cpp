@@ -66,6 +66,7 @@ Graph * theGraph = GraphFactory::get( 0 ) ;
 // ----------------------------------------------------------
 void display(){
   t += dt ;
+  char s[64] ;
 
   if( t > MaxClock ) {
     b++ ;
@@ -97,7 +98,17 @@ void display(){
         numCrossings += a.crosses(b) ? 1 : 0 ;
       }
     }
-    std::cout << "Num crossings " << numCrossings << std::endl ;
+
+    float separation = 0.0 ;
+    for( auto n=0 ; n<pointsNew.size() ; n++ ) {
+      for( auto e=n+1 ; e<pointsNew.size() ; e++ ) {
+        separation += 1.f / ( distance( pointsNew[n], pointsNew[e] ) + .1 ) ;
+      }
+    }
+    separation /= pointsNew.size() ;
+
+    std::cout << a << " - " << b << " Num crossings " << numCrossings << " separation "<< separation << std::endl ;
+
   }
 
   //  Clear screen and Z-buffer
@@ -119,14 +130,21 @@ void display(){
     float xold = pointsOld.empty() ? 0 : pointsOld[n].first ;
     float yold = pointsOld.empty() ? 0 : pointsOld[n].second ;
 
-    float x = ( xold + ( rate * ( xnew - xold ) ) ) * IMG_LIMIT ;
-    float y = ( yold + ( rate * ( ynew - yold ) ) ) * IMG_LIMIT ;
-    points.emplace_back(x,y) ;
+    float x = ( xold + ( rate * ( xnew - xold ) ) )  ;
+    float y = ( yold + ( rate * ( ynew - yold ) ) )  ;
+    glRasterPos2f( x+.035f, y );
+
+    sprintf( s, "%'d", n+1 ) ;
+    int len = (int)strlen(s);
+    for( int i = 0; i < len; i++ ) {
+      glutBitmapCharacter( GLUT_BITMAP_HELVETICA_10, s[i] );
+    }
+
+    points.emplace_back(x*IMG_LIMIT,y*IMG_LIMIT) ;
   }
   std::vector<LineSegment> lines = theGraph->getLines( points ) ;
 
   glRasterPos2f( -.9, 0.9 );
-  char s[64] ;
   sprintf( s, "Graph: %s  %'d - %'d  Nodes: %'ld  Edges: %'d/%'ld", theGraph->name().c_str(), a, b, theGraph->numNodes(), num_edges, lines.size() ) ;
   int len = (int)strlen(s);
   for( int i = 0; i < len; i++ ) {
@@ -137,7 +155,7 @@ void display(){
   glColor3f( rgbl.r, rgbl.g, rgbl.b );
 
   // L R T B
-  glOrtho( -IMG_LIMIT,  IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  1,  -1) ;
+  glOrtho( -IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  IMG_LIMIT,  1,  -1) ;
 
   for( auto line : lines ) {
       glBegin(GL_LINES) ;
@@ -149,8 +167,8 @@ void display(){
 
   float hue = 0.f ;
   float dhue = 1.f / points.size() ;
-  for( auto point : points ) {
 
+  for( auto point : points ) {
     float x = point.first ;    
     float y = point.second ;    
 
