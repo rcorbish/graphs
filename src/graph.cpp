@@ -1,34 +1,9 @@
 
 #include "graph.hpp"
+#include "linalg.hpp"
 
 #include <set>
 
-
-void eigs( 
-        double * h_S,   // output eigenvalues
-        double * h_V,   // output eigen vectors
-        double * h_A,   // input matrix ( symmetric = upper )
-        const int64_t m // m x m matrix
-    ) ;
-
-void gemm( 
-        double * h_A,
-        double * h_B,
-        double * h_C,
-        const int64_t m,
-        const int64_t n,
-        const int64_t k
-    ) ;
-int svd( 
-        double * h_U,
-        double * h_S,
-        double * h_V,
-        double * h_A,
-        const int64_t m,
-        const int64_t n,
-        const int64_t lda,
-        const int64_t rank
-    ) ;
 
 
 Graph::Graph( std::string name, int numNodes ) : _name( name ) {
@@ -56,7 +31,7 @@ void Graph::calculate() {
     incidence() ;
     std::vector<double> lap ;
     lap.resize( numNodes() * numNodes() ) ;
-    gemm( &incidenceMatrix[0], &incidenceMatrix[0], &lap[0], numNodes(), numNodes(), numEdges() ) ;
+    gram( &incidenceMatrix[0], &lap[0], numNodes(), numEdges() ) ;
 
     int m = numNodes() ;
     int n = numNodes() ;

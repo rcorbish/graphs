@@ -13,17 +13,14 @@
 #include <assert.h>
 
 #include <cuda_runtime.h>
-#include <cusolverDn.h>
 
 
 
-void gemm( 
+void gram( 
         double * h_A,
-        double * h_B,
         double * h_C,
         const int64_t m,
-        const int64_t n,
-        const int64_t k
+        const int64_t n
     ) 
 {
     cudaError_t cudaStat ;
@@ -37,17 +34,17 @@ void gemm(
     double *d_B    = NULL;
     double *d_C    = NULL;
 
-    cudaStat = cudaMalloc((void **) &d_A, sizeof(double)*m*k);
+    cudaStat = cudaMalloc((void **) &d_A, sizeof(double)*m*n);
     assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMalloc((void **) &d_B, sizeof(double)*k*n);
+    cudaStat = cudaMalloc((void **) &h_A, sizeof(double)*m*n);
     assert( cudaSuccess == cudaStat);
     cudaStat = cudaMalloc((void **) &d_C, sizeof(double)*m*n );
     assert( cudaSuccess == cudaStat);
     
    	/* copy input matrix from host to device memory */
-    cudaStat = cudaMemcpy(d_A, h_A, sizeof(double)*m*k, cudaMemcpyHostToDevice);
+    cudaStat = cudaMemcpy(d_A, h_A, sizeof(double)*m*n, cudaMemcpyHostToDevice);
     assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMemcpy(d_B, h_B, sizeof(double)*k*n, cudaMemcpyHostToDevice);
+    cudaStat = cudaMemcpy(d_B, h_A, sizeof(double)*m*n, cudaMemcpyHostToDevice);
     assert( cudaSuccess == cudaStat);
 
     cudaStat = cudaDeviceSynchronize();
@@ -59,7 +56,7 @@ void gemm(
     status = cublasDgemm(
         handle,
         CUBLAS_OP_N, CUBLAS_OP_T,
-        m, n, k,
+        m, n, m,
         &alpha,
         d_A, m,
         d_B, n,

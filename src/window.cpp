@@ -154,8 +154,9 @@ void display(){
     float x = point.first ;    
     float y = point.second ;    
 
-    hue += dhue ;
     glm::vec3 rgb = hsv_to_rgb( hue, 1, 1 ) ;
+    hue += dhue ;
+
     glColor3f( rgb.r, rgb.g, rgb.b );
     glBegin(GL_TRIANGLE_STRIP);
   		glVertex2f( x-2, y+2 ) ;
@@ -165,6 +166,7 @@ void display(){
     glEnd();
   }
 
+
   glutSwapBuffers();
   glutPostRedisplay();
 }
@@ -172,9 +174,9 @@ void display(){
 glm::vec3 hsv_to_rgb(float h, float s, float v)
 {
 	float c = v * s;
-	h = glm::mod((h * 6.f), 6.f);
-	float x = c * (1.0 - abs(glm::mod(h, 2.f) - 1.0));
-	glm::vec3 color;
+	h *= 6 ;//glm::mod((h * 6.f), 6.f);
+	float x = c * (1.f - fabs(glm::mod(h, 2.f) - 1.f));
+	glm::vec3 color ;
 
 	if (0.0 <= h && h < 1.0) {
 		color = glm::vec3(c, x, 0.0);

@@ -31,7 +31,8 @@ class GraphFactory {
                 case 7 : rc = petersen() ; break ;
                 case 8 : rc = barbell() ; break ;
             }
-            if( rc == nullptr ) rc = sample() ;
+            if( rc == nullptr ) 
+                rc = sample() ;
 
             rc -> calculate() ;
 

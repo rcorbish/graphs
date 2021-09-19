@@ -9,10 +9,21 @@
 # add_library(json SHARED JsonParser.cpp )
 # set_target_properties( json PROPERTIES  LIBRARY_OUTPUT_DIRECTORY ".." )
 
-add_executable( window window.cpp gemm.cpp svd.cpp eigs.cpp graphFactory.cpp graph.cpp )
-target_link_directories( window PRIVATE ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
-target_include_directories ( window PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} )
-target_link_libraries( window PRIVATE ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} cudart cusolver cublas )
+if( ENABLE_CUDA )
+    set( LINALG_SOURCES gram-cuda.cpp eigs-cuda.cpp )
+    set( LINALG_LIBS cudart cusolver cublas )
+    set( LINALG_INCLUDES  ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES} )
+    target_link_directories( window PRIVATE ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+
+else( ENABLE_CUDA )
+    set( LINALG_SOURCES gram-eigen.cpp eigs-eigen.cpp )
+    set( LINALG_LIBS "" )
+    set( LINALG_INCLUDES ${EIGEN3_INCLUDE_DIRS} )
+endif( ENABLE_CUDA) 
+
+add_executable( window window.cpp ${LINALG_SOURCES} graphFactory.cpp graph.cpp )
+target_include_directories ( window PUBLIC ${LINALG_INCLUDES} )
+target_link_libraries( window PRIVATE ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${LINALG_LIBS} )
 set_target_properties( window PROPERTIES  RUNTIME_OUTPUT_DIRECTORY ".." )
 
 ###############################################
