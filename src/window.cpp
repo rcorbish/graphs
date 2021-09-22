@@ -16,9 +16,13 @@
 #define IMG_LIMIT 100.0
 
 
+typedef std::vector<Point> Points ;
 const float time_step_size = 0.01f ;
 const int world_size = 7000 ;
 glm::vec3 hsv_to_rgb(float h, float s, float v ) ;
+void drawNodes( Points points ) ;
+Points relocateNodes( double rate ) ;
+void labelNodes( Points points ) ;
 
 // ----------------------------------------------------------
 // Function Prototypes
@@ -56,8 +60,8 @@ int graph = 10000 ;
 float t = 10000.f ;  // force reload of stuff
 float dt = 1 ;
 int num_edges ;
-std::vector<std::pair<double,double>> pointsNew ;
-std::vector<std::pair<double,double>> pointsOld ;
+Points pointsNew ;
+Points pointsOld ;
 constexpr float MaxClock = 150.f ;
 Graph * theGraph = GraphFactory::get( 0 ) ;
 
@@ -122,26 +126,8 @@ void display(){
   float rate = (3.f * t) / MaxClock ;
   if( rate > 1.f ) rate = 1.f ;
 
-  std::vector<Point> points ;
-  int n = 0 ;
-  for( int n=0 ; n<pointsNew.size() ; n++ ) {
-    float xnew = pointsNew[n].first ;
-    float ynew = pointsNew[n].second ;
-    float xold = pointsOld.empty() ? 0 : pointsOld[n].first ;
-    float yold = pointsOld.empty() ? 0 : pointsOld[n].second ;
+  Points points = relocateNodes( rate ) ;
 
-    float x = ( xold + ( rate * ( xnew - xold ) ) )  ;
-    float y = ( yold + ( rate * ( ynew - yold ) ) )  ;
-    glRasterPos2f( x+.035f, y );
-
-    sprintf( s, "%'d", n+1 ) ;
-    int len = (int)strlen(s);
-    for( int i = 0; i < len; i++ ) {
-      glutBitmapCharacter( GLUT_BITMAP_HELVETICA_10, s[i] );
-    }
-
-    points.emplace_back(x*IMG_LIMIT,y*IMG_LIMIT) ;
-  }
   std::vector<LineSegment> lines = theGraph->getLines( points ) ;
 
   glRasterPos2f( -.9, 0.9 );
@@ -150,6 +136,8 @@ void display(){
   for( int i = 0; i < len; i++ ) {
     glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
   }
+
+  labelNodes( points ) ;
 
   glm::vec3 rgbl = hsv_to_rgb( (graph/(float)GraphFactory::NumGraphs), 1, 1 ) ;
   glColor3f( rgbl.r, rgbl.g, rgbl.b );
@@ -164,6 +152,46 @@ void display(){
       glEnd() ;
   }
 
+  drawNodes( points ) ;
+  glutSwapBuffers();
+  glutPostRedisplay();
+}
+
+Points relocateNodes( double rate ) {
+  Points points ;
+  int n = 0 ;
+  for( int n=0 ; n<pointsNew.size() ; n++ ) {
+    float xnew = pointsNew[n].first ;
+    float ynew = pointsNew[n].second ;
+    float xold = pointsOld.empty() ? 0 : pointsOld[n].first ;
+    float yold = pointsOld.empty() ? 0 : pointsOld[n].second ;
+
+    float x = ( xold + ( rate * ( xnew - xold ) ) )  ;
+    float y = ( yold + ( rate * ( ynew - yold ) ) )  ;
+
+    points.emplace_back(x*IMG_LIMIT,y*IMG_LIMIT) ;
+  }
+  return points ;
+}
+
+void labelNodes( Points points ) {
+  int n = 0 ;
+  char s[64] ;
+  for( auto point : points ) {
+    float x = point.first / IMG_LIMIT ;
+    float y = point.second / IMG_LIMIT ;
+    n++ ;
+    glRasterPos2f( x+.035f, y );
+
+    sprintf( s, "%'d", n ) ;
+    int len = (int)strlen(s);
+    for( int i = 0; i < len; i++ ) {
+      glutBitmapCharacter( GLUT_BITMAP_HELVETICA_10, s[i] );
+    }
+  }
+}
+
+void drawNodes( std::vector<Point> points ) {
 
   float hue = 0.f ;
   float dhue = 1.f / points.size() ;
@@ -183,10 +211,6 @@ void display(){
   		glVertex2f( x+2, y-2 ) ;
     glEnd();
   }
-
-
-  glutSwapBuffers();
-  glutPostRedisplay();
 }
 
 glm::vec3 hsv_to_rgb(float h, float s, float v)
