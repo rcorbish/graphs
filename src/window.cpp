@@ -70,7 +70,7 @@ Graph * theGraph = GraphFactory::get( 0 ) ;
 // ----------------------------------------------------------
 void display(){
   t += dt ;
-  char s[64] ;
+  char s[256] ;
 
   if( t > MaxClock ) {
     b++ ;
@@ -135,6 +135,20 @@ void display(){
   int len = (int)strlen(s);
   for( int i = 0; i < len; i++ ) {
     glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
+  }
+
+  glRasterPos2f( -.9, -0.9 );
+  std::vector<double> eigs = theGraph->getSingularValues() ;
+
+  int l=0 ;
+  s[0] = 0 ;
+  for( auto i=0 ; i<eigs.size() ; i++ ) {
+    l += sprintf( s+l, "%6.3f ", eigs[i] ) ;
+    if( l > 240 ) break ;  // limit printing to bufsize
+  }
+  len = (int)strlen(s);
+  for( int i = 0; i < len; i++ ) {
+    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
   }
 
   labelNodes( points ) ;

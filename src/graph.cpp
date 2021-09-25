@@ -37,13 +37,10 @@ void Graph::calculate() {
     int n = numNodes() ;
     int k = numNodes() ;
 
-    double *U = &singularVectors[0] ;
-    // double V[ k*n ] ;
-    // svd( U, &singularValues[0], V, &lap[0], m, n, m, k ) ;
-
-    // double S[m] ;
-    eigs( &singularValues[0], U, &lap[0], m ) ;
-
+    singularValues.resize( m ) ;
+    singularVectors.resize( m * m ) ;
+    
+    eigs( &singularValues[0], &singularVectors[0] , &lap[0], m ) ;
 }
 
 

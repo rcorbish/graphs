@@ -67,6 +67,7 @@ class Graph {
 
         std::vector<Point> getCoords( int a, int b ) ;
         std::vector<LineSegment> getLines( std::vector<Point> points ) ;
+        std::vector<double> getSingularValues() { return singularValues  ; }
 
         void print( std::ostream &os ) ;
 } ;
