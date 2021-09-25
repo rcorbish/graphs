@@ -13,8 +13,7 @@
 #include <assert.h>
 
 #include <cuda_runtime.h>
-
-
+#include <cublas_v2.h>
 
 void gram( 
         double * h_A,
@@ -36,7 +35,7 @@ void gram(
 
     cudaStat = cudaMalloc((void **) &d_A, sizeof(double)*m*n);
     assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMalloc((void **) &h_A, sizeof(double)*m*n);
+    cudaStat = cudaMalloc((void **) &d_B, sizeof(double)*m*n);
     assert( cudaSuccess == cudaStat);
     cudaStat = cudaMalloc((void **) &d_C, sizeof(double)*m*n );
     assert( cudaSuccess == cudaStat);
@@ -56,7 +55,7 @@ void gram(
     status = cublasDgemm(
         handle,
         CUBLAS_OP_N, CUBLAS_OP_T,
-        m, n, m,
+        m, m, n,
         &alpha,
         d_A, m,
         d_B, n,
