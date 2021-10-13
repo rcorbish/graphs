@@ -28,6 +28,13 @@ target_include_directories ( window PUBLIC ${LINALG_INCLUDES} )
 target_link_libraries( window PRIVATE ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${LINALG_LIBS} )
 set_target_properties( window PROPERTIES  RUNTIME_OUTPUT_DIRECTORY ".." )
 
+add_executable( bug bug.cpp ${LINALG_SOURCES} )
+if( ENABLE_CUDA )
+    target_link_directories( bug PRIVATE ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+endif( ENABLE_CUDA) 
+target_include_directories ( bug PUBLIC ${LINALG_INCLUDES} )
+target_link_libraries( bug PRIVATE ${OPENGL_LIBRARIES} ${GLUT_glut_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${LINALG_LIBS} )
+set_target_properties( bug PROPERTIES  RUNTIME_OUTPUT_DIRECTORY ".." )
 ###############################################
 # Webserver
 # add_executable(webserver webserver.cpp ${MONGOOSE_SRC}/mongoose.c History.cpp )

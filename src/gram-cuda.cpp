@@ -30,20 +30,15 @@ void gram(
     assert( CUBLAS_STATUS_SUCCESS == status );
 
     double *d_A    = NULL;
-    double *d_B    = NULL;
     double *d_C    = NULL;
 
     cudaStat = cudaMalloc((void **) &d_A, sizeof(double)*m*n);
     assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMalloc((void **) &d_B, sizeof(double)*m*n);
-    assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMalloc((void **) &d_C, sizeof(double)*m*n );
+    cudaStat = cudaMalloc((void **) &d_C, sizeof(double)*m*m );
     assert( cudaSuccess == cudaStat);
     
    	/* copy input matrix from host to device memory */
     cudaStat = cudaMemcpy(d_A, h_A, sizeof(double)*m*n, cudaMemcpyHostToDevice);
-    assert( cudaSuccess == cudaStat);
-    cudaStat = cudaMemcpy(d_B, h_A, sizeof(double)*m*n, cudaMemcpyHostToDevice);
     assert( cudaSuccess == cudaStat);
 
     cudaStat = cudaDeviceSynchronize();
@@ -58,19 +53,18 @@ void gram(
         m, m, n,
         &alpha,
         d_A, m,
-        d_B, n,
+        d_A, m,
         &beta,
         d_C, m ) ;
     assert( CUBLAS_STATUS_SUCCESS == status );
 
-    cudaStat = cudaMemcpy(h_C, d_C, m*n*sizeof(double), cudaMemcpyDeviceToHost);
+    cudaStat = cudaMemcpy(h_C, d_C, m*m*sizeof(double), cudaMemcpyDeviceToHost);
     assert( cudaSuccess == cudaStat );
 
     cudaStat = cudaDeviceSynchronize();
     assert( cudaSuccess == cudaStat );
 
     if ( d_A ) { cudaFree( d_A ); }
-    if ( d_B ) { cudaFree( d_B ); }
     if ( d_C ) { cudaFree( d_C ); }
 
     if( handle ) cublasDestroy( handle ) ;
