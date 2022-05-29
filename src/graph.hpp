@@ -1,18 +1,32 @@
 #pragma once 
 
+#include <tuple>
 #include <vector>
 #include <string>
 #include <iostream>
 #include <cmath>
 
 typedef std::vector<std::vector<int>> AdjacencyMatrix ;
-typedef std::pair<double,double> Point ;
 
-static float distance( Point a, Point b ) {
-    float dx = a.first - b.first ;
-    float dy = a.second - b.second ;
-    return sqrt( dx*dx + dy*dy )  ;
-}
+class Point {
+    const double _x,_y,_z ;
+  public:
+    Point( double __x, double __y, double __z ) : _x(__x), _y(__y), _z(__z) {}
+    Point( const Point &o ) : _x(o._x), _y(o._y), _z(o._z) {}
+
+    double x() const { return _x ; }
+    double y() const { return _y ; }
+    double z() const { return _z ; }
+
+    double distanceTo( const Point &o ) const {
+        double dx = o.x() - x() ;
+        double dy = o.y() - y() ;
+        double dz = o.z() - z() ;
+        return sqrt( dx*dx + dy*dy + dz*dz ) ;
+    }
+} ;
+typedef std::vector<Point> Points ;
+
 
 class LineSegment {
     public :
@@ -20,24 +34,6 @@ class LineSegment {
         const Point b ;
 
         LineSegment( const Point _a, const Point _b ) : a(_a), b(_b) {}
-
-        bool crosses( LineSegment o ) {
-
-            double l = ( a.first - b.first) * ( o.a.second - o.b.second ) - 
-                ( a.second - b.second ) * ( o.a.first - o.b.first ) ;
-
-            double tu = ( a.first - o.a.first) * ( o.a.second - o.b.second ) - 
-                ( a.second - o.a.second ) * ( o.a.first - o.b.first ) ;
-                       
-            double t = tu / l ;
-
-            double uu = ( b.first - a.first) * ( a.second - o.a.second ) - 
-                ( b.second - a.second ) * ( a.first - o.a.first ) ;
-
-            double u = uu / l ;
-
-            return ( 0 < t && t < 1.0 ) && ( 0 < u && u < 1.0 ) ;
-        }
 } ;
 
 class Graph {

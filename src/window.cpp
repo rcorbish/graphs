@@ -16,7 +16,6 @@
 #define IMG_LIMIT 100.0
 
 
-typedef std::vector<Point> Points ;
 const float time_step_size = 0.01f ;
 const int world_size = 7000 ;
 glm::vec3 hsv_to_rgb(float h, float s, float v ) ;
@@ -88,30 +87,28 @@ void display(){
         num_edges = theGraph->numEdges() ;
       }
     } 
-    pointsOld = pointsNew ;
+
+    // pointsOld = pointsNew ;
+    
+    pointsOld.clear() ; 
+    pointsOld.reserve( pointsNew.size() ) ;
+    for( int i=0 ; i<pointsNew.size() ; i++ ) {
+      pointsOld.emplace_back( pointsNew[i] ) ;
+    }
     pointsNew = theGraph->getCoords( a, b ) ;
     t = 0 ;
 
     std::vector<LineSegment> lines = theGraph->getLines( pointsNew ) ;
 
-    int numCrossings = 0 ;
-    for( size_t i=0 ; i<lines.size() ; i++ ) {
-      LineSegment a = lines[i] ;
-      for( size_t j=(i+1) ; j<lines.size() ; j++ ) {
-        LineSegment b = lines[j] ;
-        numCrossings += a.crosses(b) ? 1 : 0 ;
-      }
-    }
-
     float separation = 0.0 ;
     for( auto n=0 ; n<pointsNew.size() ; n++ ) {
       for( auto e=n+1 ; e<pointsNew.size() ; e++ ) {
-        separation += 1.f / ( distance( pointsNew[n], pointsNew[e] ) + .1 ) ;
+        separation += 1.f / ( pointsNew[n].distanceTo( pointsNew[e] ) + .1 ) ;
       }
     }
     separation /= pointsNew.size() ;
 
-    std::cout << a << " - " << b << " Num crossings " << numCrossings << " separation "<< separation << std::endl ;
+    std::cout << a << " - " << b << " separation "<< separation << std::endl ;
 
   }
 
@@ -161,8 +158,8 @@ void display(){
 
   for( auto line : lines ) {
       glBegin(GL_LINES) ;
-        glVertex2f( line.a.first, line.a.second ) ;
-        glVertex2f( line.b.first, line.b.second ) ;
+        glVertex3f( line.a.x(), line.a.y(), line.a.z() ) ;
+        glVertex3f( line.b.x(), line.b.y(), line.b.z() ) ;
       glEnd() ;
   }
 
@@ -175,15 +172,18 @@ Points relocateNodes( double rate ) {
   Points points ;
   int n = 0 ;
   for( int n=0 ; n<pointsNew.size() ; n++ ) {
-    float xnew = pointsNew[n].first ;
-    float ynew = pointsNew[n].second ;
-    float xold = pointsOld.empty() ? 0 : pointsOld[n].first ;
-    float yold = pointsOld.empty() ? 0 : pointsOld[n].second ;
+    float xnew = pointsNew[n].x() ;
+    float ynew = pointsNew[n].y() ;
+    float znew = pointsNew[n].z() ;
+    float xold = pointsOld.empty() ? 0 : pointsOld[n].x() ;
+    float yold = pointsOld.empty() ? 0 : pointsOld[n].y() ;
+    float zold = pointsOld.empty() ? 0 : pointsOld[n].z() ;
 
     float x = ( xold + ( rate * ( xnew - xold ) ) )  ;
     float y = ( yold + ( rate * ( ynew - yold ) ) )  ;
+    float z = ( zold + ( rate * ( znew - zold ) ) )  ;
 
-    points.emplace_back(x*IMG_LIMIT,y*IMG_LIMIT) ;
+    points.emplace_back(x*IMG_LIMIT,y*IMG_LIMIT,z*IMG_LIMIT) ;
   }
   return points ;
 }
@@ -192,10 +192,11 @@ void labelNodes( Points points ) {
   int n = 0 ;
   char s[64] ;
   for( auto point : points ) {
-    float x = point.first / IMG_LIMIT ;
-    float y = point.second / IMG_LIMIT ;
+    float xloc = point.x() / IMG_LIMIT ;
+    float yloc = point.y() / IMG_LIMIT ;
+    float zloc = point.z() / IMG_LIMIT ;
     n++ ;
-    glRasterPos2f( x+.035f, y );
+    glRasterPos3f( xloc+.035f, yloc, zloc );
 
     sprintf( s, "%'d", n ) ;
     int len = (int)strlen(s);
@@ -211,18 +212,23 @@ void drawNodes( std::vector<Point> points ) {
   float dhue = 1.f / points.size() ;
 
   for( auto point : points ) {
-    float x = point.first ;    
-    float y = point.second ;    
+    float xloc = point.x() ;
+    float yloc = point.y() ;
+    float zloc = point.z() ;
 
     glm::vec3 rgb = hsv_to_rgb( hue, 1, 1 ) ;
     hue += dhue ;
 
     glColor3f( rgb.r, rgb.g, rgb.b );
     glBegin(GL_TRIANGLE_STRIP);
-  		glVertex2f( x-2, y+2 ) ;
-  		glVertex2f( x-2, y-2 ) ;
-  		glVertex2f( x+2, y+2 ) ;
-  		glVertex2f( x+2, y-2 ) ;
+  		glVertex3f( xloc-2, yloc+2, zloc+2 ) ;
+  		glVertex3f( xloc-2, yloc-2, zloc+2 ) ;
+  		glVertex3f( xloc+2, yloc+2, zloc+2 ) ;
+  		glVertex3f( xloc+2, yloc-2, zloc+2 ) ;
+  		glVertex3f( xloc-2, yloc+2, zloc-2 ) ;
+  		glVertex3f( xloc-2, yloc-2, zloc-2 ) ;
+  		glVertex3f( xloc+2, yloc+2, zloc-2 ) ;
+  		glVertex3f( xloc+2, yloc-2, zloc-2 ) ;
     glEnd();
   }
 }
