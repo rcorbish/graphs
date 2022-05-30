@@ -77,18 +77,19 @@ size_t Graph::numEdges() {
 
 std::string Graph::name() { return this->_name; }
 
-std::vector<Point> Graph::getCoords(int a, int b) {
+std::vector<Point> Graph::getCoords(int a, int b, int c) {
 
     double *U = &singularVectors[0];
 
     std::vector<Point> points;
     points.reserve( numNodes() ) ;
-    
+
     double *x = U + a * numNodes();
     double *y = U + b * numNodes();
+    double *z = U + c * numNodes();
 
     for (int i = 0; i < numNodes(); i++) {
-        points.emplace_back(x[i], y[i], 0);
+        points.emplace_back(x[i], y[i], z[i]);
     }
 
     return points;

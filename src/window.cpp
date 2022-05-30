@@ -22,6 +22,15 @@ glm::vec3 hsv_to_rgb(float h, float s, float v ) ;
 void drawNodes( Points points ) ;
 Points relocateNodes( double rate ) ;
 void labelNodes( Points points ) ;
+void mousebutton(int button,int state,int x,int y) ;
+void mousemove( int x,int y) ;
+void keyboard(unsigned char key, int x, int y) ;
+void setSpin(double x, double y, double z) ;
+void reset() ;
+void reshape(int w,int h) ;
+void nextGraph() ;
+void changeDrawingParams() ;
+
 
 // ----------------------------------------------------------
 // Function Prototypes
@@ -40,6 +49,12 @@ int main( int argc, char **argv ) {
  
   // Create window
   glutCreateWindow("Graphs");
+
+  glutReshapeFunc(reshape);
+  glutMouseFunc(mousebutton);
+  glutMotionFunc(mousemove) ;
+	glutKeyboardFunc(keyboard);
+
   glutReshapeWindow( 500, 500 );
  
   // Enable Z-buffer depth test
@@ -47,88 +62,127 @@ int main( int argc, char **argv ) {
 
   // Callback functions
   glutDisplayFunc(display);
-  
+
+  reset() ;
+  nextGraph() ;
+
   // Pass control to GLUT for events
   glutMainLoop(); 
 }
 
+//===================================
+// GLOBAL STUFF FOR display()
+//
 
+// Next 4 items are meant to cause overflow so the
+// if (x>nnn) test all fail in each loop of display
+// saves us putting the init code in 2 places
 int a = 10000 ; 
 int b = 10000 ;
+int c = 10000 ;
 int graph = 10000 ;
-float t = 10000.f ;  // force reload of stuff
+float t = 10000.f ;  
+
 float dt = 1 ;
 int num_edges ;
 Points pointsNew ;
 Points pointsOld ;
 constexpr float MaxClock = 150.f ;
 Graph * theGraph = GraphFactory::get( 0 ) ;
+float angley ;
+float anglex ;
+float radius ;
 
-// ----------------------------------------------------------
-// display() Callback function
-// ----------------------------------------------------------
-void display(){
-  t += dt ;
-  char s[256] ;
+void nextGraph() {
+    graph++ ;
+    delete theGraph ;
+    if( graph>=GraphFactory::NumGraphs ) graph = 0 ;
+    theGraph = GraphFactory::get(graph) ;
+    pointsNew.clear() ;
+    num_edges = theGraph->numEdges() ;
+    a = 10000 ;
+    b = 10000 ;
+    c = 10000 ;
+ 		changeDrawingParams() ;
+}
 
-  if( t > MaxClock ) {
-    b++ ;
-    if( (b) >= theGraph->numNodes() ) { 
-      a++ ; 
-      b = a+1 ;
-      if( (a+1) >= theGraph->numNodes() ) {
-        a = 1 ;
-        b = 2 ;
-        graph++ ;
-        delete theGraph ;
-        if( graph>=GraphFactory::NumGraphs ) graph = 0 ;
-        theGraph = GraphFactory::get(graph) ;
-        pointsNew.clear() ;
-        num_edges = theGraph->numEdges() ;
-      }
-    } 
+void changeDrawingParams() {
 
-    // pointsOld = pointsNew ;
-    
+    c++ ;
+    if( (c) >= theGraph->numNodes() ) { 
+      b++ ;
+      c = b + 1 ;
+      if( (b) >= theGraph->numNodes() ) { 
+        a++ ; 
+        b = a + 1 ;
+        if( a >= theGraph->numNodes() ) {
+          a = 1 ;
+          b = 2 ;
+          c = 3 ;
+        }
+      } 
+    }
+    //----------------------
+    // pointsOld = pointsNew    
     pointsOld.clear() ; 
     pointsOld.reserve( pointsNew.size() ) ;
     for( int i=0 ; i<pointsNew.size() ; i++ ) {
       pointsOld.emplace_back( pointsNew[i] ) ;
     }
-    pointsNew = theGraph->getCoords( a, b ) ;
+    //----------------------
+    pointsNew = theGraph->getCoords( a, b, c ) ;
+}
+
+
+// ----------------------------------------------------------
+// display() Callback function
+// ----------------------------------------------------------
+void display() {
+  t += dt ;
+
+  if( t > MaxClock ) {
+		// changeDrawingParams() ;
     t = 0 ;
-
-    std::vector<LineSegment> lines = theGraph->getLines( pointsNew ) ;
-
-    float separation = 0.0 ;
-    for( auto n=0 ; n<pointsNew.size() ; n++ ) {
-      for( auto e=n+1 ; e<pointsNew.size() ; e++ ) {
-        separation += 1.f / ( pointsNew[n].distanceTo( pointsNew[e] ) + .1 ) ;
-      }
-    }
-    separation /= pointsNew.size() ;
-
-    std::cout << a << " - " << b << " separation "<< separation << std::endl ;
-
   }
 
+  float rate = (3.f * t) / MaxClock ;
+  if( rate > 1.f ) {
+    rate = 1.f ;
+  }
+  rate = 1.f ;
   //  Clear screen and Z-buffer
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
- 
+
+  Points points = relocateNodes( rate ) ;
+  std::vector<LineSegment> lines = theGraph->getLines( points ) ;
+
   // Reset transformations
   glLoadIdentity(); 
 
-  glColor3f( .2, 1, .8 );
+  glm::vec3 c1(cos( angley ), 0.0, -sin( angley ));
+	glm::vec3 c2(0.0, 1.0, 0.0);
+	glm::vec3 c3(sin( angley ), 0.0, cos( angley ));
+  glm::mat3 ry(c1, c2, c3 ) ;
 
-  float rate = (3.f * t) / MaxClock ;
-  if( rate > 1.f ) rate = 1.f ;
+	glm::vec3 c4(1.0, 0.0, 0.0);
+  glm::vec3 c5(0.0, cos( anglex ), -sin( anglex ));
+	glm::vec3 c6(0.0, sin( anglex ), cos( anglex ));
+  glm::mat3 rx(c4, c5, c6 ) ;
 
-  Points points = relocateNodes( rate ) ;
+  glm::vec3 camera( 0, 0, radius ) ;
+  glm::vec3 camera2 = rx * ry * camera ;
+  
+  std::cout << camera2.x << "," << camera2.y << "," << camera2.z << std::endl ;
+  glMatrixMode(GL_MODELVIEW);
+  gluLookAt( camera2.x, camera2.y, camera2.z, 
+             0.0f, 0.0f, 0.0f, /* point at */
+             0.0f, 1.0f,  0.0f /* up */ 
+           ) ;
 
-  std::vector<LineSegment> lines = theGraph->getLines( points ) ;
-
+  // 1st draw the text stuff w/o transformations
   glRasterPos2f( -.9, 0.9 );
-  sprintf( s, "Graph: %s  %'d - %'d  Nodes: %'ld  Edges: %'d/%'ld", theGraph->name().c_str(), a, b, theGraph->numNodes(), num_edges, lines.size() ) ;
+  char s[256] ;
+  sprintf( s, "Graph: %s  %'d - %'d - %'d Nodes: %'ld  Edges: %'d/%'ld", theGraph->name().c_str(), a, b, c, theGraph->numNodes(), num_edges, lines.size() ) ;
   int len = (int)strlen(s);
   for( int i = 0; i < len; i++ ) {
     glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
@@ -148,13 +202,18 @@ void display(){
     glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
   }
 
+  // glTranslatef(translate_x, translate_y, translate_z);
+	// glRotatef(spin,spin_x,spin_y,spin_z);
+
+  glColor3f( .2, 1, .8 );
+
   labelNodes( points ) ;
 
   glm::vec3 rgbl = hsv_to_rgb( (graph/(float)GraphFactory::NumGraphs), 1, 1 ) ;
   glColor3f( rgbl.r, rgbl.g, rgbl.b );
 
   // L R T B
-  glOrtho( -IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  IMG_LIMIT,  1,  -1) ;
+  glOrtho( -IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT,  IMG_LIMIT,  IMG_LIMIT,  -IMG_LIMIT) ;
 
   for( auto line : lines ) {
       glBegin(GL_LINES) ;
@@ -165,7 +224,95 @@ void display(){
 
   drawNodes( points ) ;
   glutSwapBuffers();
-  glutPostRedisplay();
+  glutPostRedisplay() ;
+}
+
+int prev_x ;
+int prev_y ;
+void mousebutton(int button,int state,int x,int y)
+{
+	switch(button)
+	{
+	case GLUT_LEFT_BUTTON:
+		if(state==GLUT_DOWN) {
+        prev_x = x ;
+        prev_y = y ;
+    } 
+    break;
+	case GLUT_MIDDLE_BUTTON:
+		if(state==GLUT_DOWN)
+		{
+			glutIdleFunc(nullptr);
+		}
+		break;
+	case GLUT_RIGHT_BUTTON:
+		if(state==GLUT_DOWN)
+			glutIdleFunc(nullptr);
+		break;
+	default:
+		break;
+	}
+}
+
+
+void mousemove(int x,int y)
+{
+    float dx = ( x - prev_x ) / 100.f ;
+    float dy = ( y - prev_y ) / 100.f ;
+    angley = dx ;
+    anglex = dy ;
+    // std::cout << dx << ',' << dy << std::endl ;
+}
+
+void keyboard(unsigned char key, int x, int y)
+{
+  std::cout << "Clicked " << key << std::endl ;
+	//-------- spin --------
+	if(key=='x')
+	{
+		glutPostRedisplay();
+	}
+	else if(key=='y')
+	{
+		glutPostRedisplay();
+	}
+	else if(key=='z')
+	{
+		glutPostRedisplay();
+	}
+	else if(key=='a')
+	{
+		glutPostRedisplay();
+	}
+	//-------- spin --------
+	//-------- zoom --------
+	else if(key=='i')
+	{
+		glutPostRedisplay();
+	}
+	else if(key=='o')
+	{
+		glutPostRedisplay();
+	}
+	//-------- zoom --------
+	//-------- reset -------
+	else if(key=='r')
+	{
+		reset();
+		glutPostRedisplay();
+	}
+	//-------- next graph -------
+	else if(key=='g')
+	{
+		nextGraph() ;
+		glutPostRedisplay();
+	}
+	else if(key=='n')
+	{
+		changeDrawingParams() ;
+		glutPostRedisplay();
+	}
+	//-------- next graph -------
 }
 
 Points relocateNodes( double rate ) {
@@ -236,6 +383,7 @@ void drawNodes( std::vector<Point> points ) {
 glm::vec3 hsv_to_rgb(float h, float s, float v)
 {
 	float c = v * s;
+
 	h *= 6 ;//glm::mod((h * 6.f), 6.f);
 	float x = c * (1.f - fabs(glm::mod(h, 2.f) - 1.f));
 	glm::vec3 color ;
@@ -265,3 +413,19 @@ glm::vec3 hsv_to_rgb(float h, float s, float v)
 
 
 
+void reset()
+{
+  anglex = 0.f ;
+  angley = 0.f ;
+  radius = 3.f ;
+}
+
+void reshape(int w,int h)
+{
+	glViewport(0,0, (GLsizei)w,(GLsizei)h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(100.0f, (GLfloat)w/(GLfloat)h, 1.0f, 100.0f);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+}

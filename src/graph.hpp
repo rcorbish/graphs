@@ -61,7 +61,7 @@ class Graph {
         size_t numEdges() ;
         std::string name() ;
 
-        std::vector<Point> getCoords( int a, int b ) ;
+        std::vector<Point> getCoords( int a, int b, int c ) ;
         std::vector<LineSegment> getLines( std::vector<Point> points ) ;
         std::vector<double> getSingularValues() { return singularValues  ; }
 
