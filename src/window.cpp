@@ -9,6 +9,7 @@
 
 #define GL_GLEXT_PROTOTYPES
 #include <GL/glut.h>
+#include <GL/freeglut_ext.h> 
 #include <glm/glm.hpp>  
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -20,7 +21,7 @@ const float time_step_size = 0.01f ;
 const int world_size = 7000 ;
 glm::vec3 hsv_to_rgb(float h, float s, float v ) ;
 void drawNodes( Points points ) ;
-Points relocateNodes( double rate ) ;
+Points relocateNodes() ;
 void labelNodes( Points points ) ;
 void mousebutton(int button,int state,int x,int y) ;
 void mousemove( int x,int y) ;
@@ -30,6 +31,8 @@ void reset() ;
 void reshape(int w,int h) ;
 void nextGraph() ;
 void changeDrawingParams() ;
+void setCameraPosition() ;
+void drawText( std::vector<LineSegment> lines ) ;
 
 
 // ----------------------------------------------------------
@@ -45,10 +48,9 @@ int main( int argc, char **argv ) {
  
   //  Request double buffered true color window with Z-buffer
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB );
-  // glutInitDisplayMode(GLUT_RGB );
  
   // Create window
-  glutCreateWindow("Graphs");
+  glutCreateWindow( "Graph Layouts" );
 
   glutReshapeFunc(reshape);
   glutMouseFunc(mousebutton);
@@ -74,7 +76,7 @@ int main( int argc, char **argv ) {
 // GLOBAL STUFF FOR display()
 //
 
-// Next 4 items are meant to cause overflow so the
+// Next 5 items are meant to cause overflow so the
 // if (x>nnn) test all fail in each loop of display
 // saves us putting the init code in 2 places
 int a = 10000 ; 
@@ -83,7 +85,7 @@ int c = 10000 ;
 int graph = 10000 ;
 float t = 10000.f ;  
 
-float dt = 1 ;
+constexpr float dt = 1.f ;
 int num_edges ;
 Points pointsNew ;
 Points pointsOld ;
@@ -141,69 +143,18 @@ void display() {
   t += dt ;
 
   if( t > MaxClock ) {
-		// changeDrawingParams() ;
     t = 0 ;
   }
 
-  float rate = (3.f * t) / MaxClock ;
-  if( rate > 1.f ) {
-    rate = 1.f ;
-  }
-  rate = 1.f ;
   //  Clear screen and Z-buffer
   glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-  Points points = relocateNodes( rate ) ;
+  Points points = relocateNodes() ;
   std::vector<LineSegment> lines = theGraph->getLines( points ) ;
 
   // Reset transformations
-  glLoadIdentity(); 
-
-  glm::vec3 c1(cos( angley ), 0.0, -sin( angley ));
-	glm::vec3 c2(0.0, 1.0, 0.0);
-	glm::vec3 c3(sin( angley ), 0.0, cos( angley ));
-  glm::mat3 ry(c1, c2, c3 ) ;
-
-	glm::vec3 c4(1.0, 0.0, 0.0);
-  glm::vec3 c5(0.0, cos( anglex ), -sin( anglex ));
-	glm::vec3 c6(0.0, sin( anglex ), cos( anglex ));
-  glm::mat3 rx(c4, c5, c6 ) ;
-
-  glm::vec3 camera( 0, 0, radius ) ;
-  glm::vec3 camera2 = rx * ry * camera ;
-  
-  std::cout << camera2.x << "," << camera2.y << "," << camera2.z << std::endl ;
-  glMatrixMode(GL_MODELVIEW);
-  gluLookAt( camera2.x, camera2.y, camera2.z, 
-             0.0f, 0.0f, 0.0f, /* point at */
-             0.0f, 1.0f,  0.0f /* up */ 
-           ) ;
-
-  // 1st draw the text stuff w/o transformations
-  glRasterPos2f( -.9, 0.9 );
-  char s[256] ;
-  sprintf( s, "Graph: %s  %'d - %'d - %'d Nodes: %'ld  Edges: %'d/%'ld", theGraph->name().c_str(), a, b, c, theGraph->numNodes(), num_edges, lines.size() ) ;
-  int len = (int)strlen(s);
-  for( int i = 0; i < len; i++ ) {
-    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
-  }
-
-  glRasterPos2f( -.9, -0.9 );
-  std::vector<double> eigs = theGraph->getSingularValues() ;
-
-  int l=0 ;
-  s[0] = 0 ;
-  for( auto i=0 ; i<eigs.size() ; i++ ) {
-    l += sprintf( s+l, "%6.3f ", eigs[i] ) ;
-    if( l > 240 ) break ;  // limit printing to bufsize
-  }
-  len = (int)strlen(s);
-  for( int i = 0; i < len; i++ ) {
-    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
-  }
-
-  // glTranslatef(translate_x, translate_y, translate_z);
-	// glRotatef(spin,spin_x,spin_y,spin_z);
+  drawText( lines ) ;
+  setCameraPosition() ;
 
   glColor3f( .2, 1, .8 );
 
@@ -227,31 +178,90 @@ void display() {
   glutPostRedisplay() ;
 }
 
+void drawText( std::vector<LineSegment> lines ) {
+  glMatrixMode(GL_PROJECTION);
+  glPushMatrix();             
+  glLoadIdentity();   
+  int w = glutGet( GLUT_WINDOW_WIDTH );
+  int h = glutGet( GLUT_WINDOW_HEIGHT );
+  glOrtho( 0, w, 0, h, -1, 1 );
+
+  glMatrixMode(GL_MODELVIEW);
+  glPushMatrix();
+  glLoadIdentity();
+
+  // 1st draw the text stuff w/o transformations
+  glRasterPos2i( 0, h-20) ;
+  char s[256] ;
+  sprintf( s, "Graph: %s  %'d - %'d - %'d Nodes: %'ld  Edges: %'d/%'ld", theGraph->name().c_str(), a, b, c, theGraph->numNodes(), num_edges, lines.size() ) ;
+  int len = (int)strlen(s);
+  for( int i = 0; i < len; i++ ) {
+    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_18, s[i] );
+  }
+
+  glRasterPos2i( 0, 5) ;
+  std::vector<double> eigs = theGraph->getSingularValues() ;
+
+  int l=0 ;
+  s[0] = 0 ;
+  for( auto i=0 ; i<eigs.size() ; i++ ) {
+    l += sprintf( s+l, "%6.3f ", eigs[i] ) ;
+    if( l > 240 ) break ;  // limit printing to bufsize
+  }
+  len = (int)strlen(s);
+  for( int i = 0; i < len; i++ ) {
+    glutBitmapCharacter( GLUT_BITMAP_HELVETICA_12, s[i] );
+  }
+
+  glMatrixMode(GL_MODELVIEW);
+  glPopMatrix();
+  glMatrixMode(GL_PROJECTION);
+  glPopMatrix();  
+}
+
+
+void setCameraPosition() {
+  glMatrixMode(GL_MODELVIEW) ;
+  glLoadIdentity() ; 
+
+  // Then figure out the camera position based on mose movement
+  glm::vec3 c1(cos( angley ), 0.0, -sin( angley ));
+	glm::vec3 c2(0.0, 1.0, 0.0);
+	glm::vec3 c3(sin( angley ), 0.0, cos( angley ));
+  glm::mat3 ry(c1, c2, c3 ) ;
+
+	glm::vec3 c4(1.0, 0.0, 0.0);
+  glm::vec3 c5(0.0, cos( anglex ), -sin( anglex ));
+	glm::vec3 c6(0.0, sin( anglex ), cos( anglex ));
+  glm::mat3 rx(c4, c5, c6 ) ;
+
+  glm::vec3 camera( 0, 0, radius ) ;
+  glm::vec3 camera2 = rx * ry * camera ;
+  
+  gluLookAt( camera2.x, camera2.y, camera2.z, 
+             0.0f, 0.0f, 0.0f, /* point at */
+             0.0f, 1.0f,  0.0f /* up */ 
+           ) ;
+}
+
+
 int prev_x ;
 int prev_y ;
 void mousebutton(int button,int state,int x,int y)
 {
-	switch(button)
-	{
-	case GLUT_LEFT_BUTTON:
+	if(button == GLUT_LEFT_BUTTON ) {
 		if(state==GLUT_DOWN) {
         prev_x = x ;
         prev_y = y ;
     } 
-    break;
-	case GLUT_MIDDLE_BUTTON:
-		if(state==GLUT_DOWN)
-		{
-			glutIdleFunc(nullptr);
-		}
-		break;
-	case GLUT_RIGHT_BUTTON:
-		if(state==GLUT_DOWN)
-			glutIdleFunc(nullptr);
-		break;
-	default:
-		break;
 	}
+
+	if(button == 3 ) {
+    radius += 0.2f ;
+  }
+	if(button == 4 ) {
+    radius -= 0.2f ;
+  }
 }
 
 
@@ -261,75 +271,41 @@ void mousemove(int x,int y)
     float dy = ( y - prev_y ) / 100.f ;
     angley = dx ;
     anglex = dy ;
-    // std::cout << dx << ',' << dy << std::endl ;
 }
+
+
 
 void keyboard(unsigned char key, int x, int y)
 {
-  std::cout << "Clicked " << key << std::endl ;
-	//-------- spin --------
-	if(key=='x')
-	{
-		glutPostRedisplay();
-	}
-	else if(key=='y')
-	{
-		glutPostRedisplay();
-	}
-	else if(key=='z')
-	{
-		glutPostRedisplay();
-	}
-	else if(key=='a')
-	{
-		glutPostRedisplay();
-	}
-	//-------- spin --------
-	//-------- zoom --------
-	else if(key=='i')
-	{
-		glutPostRedisplay();
-	}
-	else if(key=='o')
-	{
-		glutPostRedisplay();
-	}
-	//-------- zoom --------
 	//-------- reset -------
-	else if(key=='r')
+	if(key=='r')
 	{
 		reset();
-		glutPostRedisplay();
 	}
 	//-------- next graph -------
 	else if(key=='g')
 	{
 		nextGraph() ;
-		glutPostRedisplay();
 	}
 	else if(key=='n')
 	{
 		changeDrawingParams() ;
-		glutPostRedisplay();
 	}
 	//-------- next graph -------
+	else if(key=='q')
+	{
+    exit(0) ;
+	}
 }
 
-Points relocateNodes( double rate ) {
+
+Points relocateNodes() {
   Points points ;
   int n = 0 ;
   for( int n=0 ; n<pointsNew.size() ; n++ ) {
-    float xnew = pointsNew[n].x() ;
-    float ynew = pointsNew[n].y() ;
-    float znew = pointsNew[n].z() ;
-    float xold = pointsOld.empty() ? 0 : pointsOld[n].x() ;
-    float yold = pointsOld.empty() ? 0 : pointsOld[n].y() ;
-    float zold = pointsOld.empty() ? 0 : pointsOld[n].z() ;
-
-    float x = ( xold + ( rate * ( xnew - xold ) ) )  ;
-    float y = ( yold + ( rate * ( ynew - yold ) ) )  ;
-    float z = ( zold + ( rate * ( znew - zold ) ) )  ;
-
+    float x = pointsNew[n].x() ;
+    float y = pointsNew[n].y() ;
+    float z = pointsNew[n].z() ;
     points.emplace_back(x*IMG_LIMIT,y*IMG_LIMIT,z*IMG_LIMIT) ;
   }
   return points ;
@@ -343,6 +319,7 @@ void labelNodes( Points points ) {
     float yloc = point.y() / IMG_LIMIT ;
     float zloc = point.z() / IMG_LIMIT ;
     n++ ;
+    // std::cout << xloc << ',' << yloc <<',' <<zloc << std::endl ;
     glRasterPos3f( xloc+.035f, yloc, zloc );
 
     sprintf( s, "%'d", n ) ;
@@ -425,7 +402,7 @@ void reshape(int w,int h)
 	glViewport(0,0, (GLsizei)w,(GLsizei)h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(100.0f, (GLfloat)w/(GLfloat)h, 1.0f, 100.0f);
+	gluPerspective(100.0f, (GLfloat)w/(GLfloat)h, .10f, 50.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
